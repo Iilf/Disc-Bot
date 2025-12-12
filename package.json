@@ -1,0 +1,17 @@
+{
+  "name": "disc-bot",
+  "version": "1.0.0",
+  "description": "A simple Discord bot (discord.js v14)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "deploy-commands": "node deploy-commands.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "discord.js": "^14.25.1",
+    "dotenv": "^16.0.0"
+  }
+}
