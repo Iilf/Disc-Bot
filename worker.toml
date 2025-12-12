@@ -1,0 +1,8 @@
+name = "disc-bot-worker"
+type = "javascript"
+account_id = "<YOUR_CF_ACCOUNT_ID>"
+workers_dev = true
+compatibility_date = "2025-12-12"
+
+[vars]
+DISCORD_PUBLIC_KEY = "<YOUR_DISCORD_APP_PUBLIC_KEY>"
