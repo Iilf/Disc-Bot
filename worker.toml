@@ -6,4 +6,12 @@ compatibility_date = "2025-12-12"
 
 [vars]
 DISCORD_PUBLIC_KEY = "ab9b4a9fcad24649d89d2dbfb96d6458caf6c11ed87618efd91f95a05c3c2cc6"
+DISCORD_TOKEN = ""          # Optional for REST API calls, not needed for slash commands only
+CLIENT_ID = "1439775030077554821"
+GUILD_ID = "1433451746193051690"
 GREETING_MESSAGE = "Hello, agent!"
+
+# Optional KV storage setup
+kv_namespaces = [
+  { binding = "BOT_DATA", id = "your_kv_namespace_id_here" }
+]
