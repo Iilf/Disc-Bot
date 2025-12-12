@@ -1,8 +1,9 @@
 name = "disc-bot-worker"
 type = "javascript"
-account_id = "<YOUR_CF_ACCOUNT_ID>"
+account_id = "9321bc23114cdcb80861dcf170267c68"
 workers_dev = true
 compatibility_date = "2025-12-12"
 
 [vars]
-DISCORD_PUBLIC_KEY = "<YOUR_DISCORD_APP_PUBLIC_KEY>"
+DISCORD_PUBLIC_KEY = "ab9b4a9fcad24649d89d2dbfb96d6458caf6c11ed87618efd91f95a05c3c2cc6"
+GREETING_MESSAGE = "Hello, agent!"
