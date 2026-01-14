@@ -43,30 +43,35 @@ export default {
 
     // 2. DISCORD INTERACTION HANDLING
     if (request.method !== 'POST') {
-      return new Response('Method Not Allowed', { status: 405 });
+      return new Response('Bot is online! Use POST for interactions.', { status: 200 });
     }
 
     const signature = request.headers.get('x-signature-ed25519');
     const timestamp = request.headers.get('x-signature-timestamp');
     const body = await request.text();
 
+    // Verification step using the DISCORD_PUBLIC_KEY
     const isValidRequest =
       signature &&
       timestamp &&
       verifyKey(body, signature, timestamp, env.DISCORD_PUBLIC_KEY);
 
     if (!isValidRequest) {
+      console.error('Invalid request signature detected.');
       return new Response('Invalid request signature', { status: 401 });
     }
 
     const interaction = JSON.parse(body);
 
+    // Discord Health Check (Ping)
+    // This is the specific part that makes the URL work in the Discord Portal
     if (interaction.type === InteractionType.Ping) {
       return new Response(JSON.stringify({ type: InteractionResponseType.Pong }), {
         headers: { 'content-type': 'application/json' },
       });
     }
 
+    // Command Router
     if (interaction.type === InteractionType.ApplicationCommand) {
       const commandName = interaction.data.name;
       const command = commands[commandName];
@@ -78,6 +83,7 @@ export default {
             headers: { 'content-type': 'application/json' },
           });
         } catch (error) {
+          console.error('Command Error:', error);
           return new Response(
             JSON.stringify({
               type: InteractionResponseType.ChannelMessageWithSource,
