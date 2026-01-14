@@ -1,4 +1,4 @@
-name = "my-discord-bot"
+name = "dc-bot"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
