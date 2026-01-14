@@ -2,6 +2,11 @@ name = "dc-bot"
 main = "src/index.ts"
 compatibility_date = "2026-01-14"
 
+[observability]
+[observability.logs]
+enabled = false
+invocation_logs = true
+
 [vars]
 # Public Variables
 COMMAND_PREFIX = "/"
