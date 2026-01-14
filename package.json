@@ -1,0 +1,8 @@
+{
+  "name": "my-discord-bot",
+  "type": "module",
+  "dependencies": {
+    "discord-api-types": "^0.37.0",
+    "discord-interactions": "^4.0.0"
+  }
+}
