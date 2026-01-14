@@ -1,6 +1,9 @@
-import { verifyKey } from 'discord-interactions';
-import { InteractionType, InteractionResponseType } from 'discord-api-types/v10';
-import ping from './commands/ping'; 
+import {
+  InteractionType,
+  InteractionResponseType,
+  verifyKey,
+} from 'discord-interactions';
+import ping from './commands/ping';
 
 export interface Env {
   DISCORD_TOKEN: string;
@@ -14,16 +17,17 @@ const commands: Record<string, any> = {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    // 1. DISCORD INTERACTION HANDLING
+    // 1. Verify the request is a POST request
     if (request.method !== 'POST') {
-      return new Response('Bot is online! Use POST for interactions.', { status: 200 });
+      return new Response('Method Not Allowed', { status: 405 });
     }
 
+    // 2. Extract signature headers for verification
     const signature = request.headers.get('x-signature-ed25519');
     const timestamp = request.headers.get('x-signature-timestamp');
     const body = await request.text();
 
-    // Verification step: Discord uses this to verify your URL
+    // 3. Perform cryptographic verification
     const isValidRequest =
       signature &&
       timestamp &&
@@ -33,18 +37,18 @@ export default {
       return new Response('Invalid request signature', { status: 401 });
     }
 
+    // 4. Handle Discord Interactions
     const interaction = JSON.parse(body);
 
-    // 2. ACKNOWLEDGE PING (Health Check)
-    if (interaction.type === InteractionType.Ping) {
-      return new Response(
-        JSON.stringify({ type: InteractionResponseType.Pong }),
-        { headers: { 'content-type': 'application/json' } }
-      );
+    // Discord sends a PING (Type 1) to verify the endpoint URL
+    if (interaction.type === InteractionType.PING) {
+      return new Response(JSON.stringify({ type: InteractionResponseType.PONG }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    // 3. COMMAND ROUTER
-    if (interaction.type === InteractionType.ApplicationCommand) {
+    // Handle Application Commands (Type 2)
+    if (interaction.type === InteractionType.APPLICATION_COMMAND) {
       const commandName = interaction.data.name;
       const command = commands[commandName];
 
@@ -52,21 +56,24 @@ export default {
         try {
           const result = await command.execute(interaction, env);
           return new Response(JSON.stringify(result), {
-            headers: { 'content-type': 'application/json' },
+            headers: { 'Content-Type': 'application/json' },
           });
         } catch (error) {
           console.error('Command Error:', error);
           return new Response(
             JSON.stringify({
-              type: InteractionResponseType.ChannelMessageWithSource,
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
               data: { content: 'Error executing command.' },
             }),
-            { headers: { 'content-type': 'application/json' } }
+            { headers: { 'Content-Type': 'application/json' } }
           );
         }
       }
     }
 
-    return new Response('Unknown Interaction', { status: 400 });
+    return new Response(JSON.stringify({ error: 'Unknown interaction' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
   },
 };
