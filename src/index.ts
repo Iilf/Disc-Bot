@@ -23,8 +23,8 @@ export default {
     }
 
     // 2. Extract signature headers for verification
-    const signature = request.headers.get('x-signature-ed25519');
-    const timestamp = request.headers.get('x-signature-timestamp');
+    const signature = request.headers.get('X-Signature-Ed25519');
+    const timestamp = request.headers.get('X-Signature-Timestamp');
     const body = await request.text();
 
     // 3. Perform cryptographic verification
