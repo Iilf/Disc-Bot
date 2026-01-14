@@ -1,12 +1,15 @@
-import { APIInteractionResponse, InteractionResponseType } from 'discord-api-types/v10';
+import { InteractionResponseType } from 'discord-api-types/v10';
 
-export const ping = {
-  name: 'ping',
-  description: 'Replies with Pong!',
-  execute: async (interaction: any, env: Env): Promise<APIInteractionResponse> => {
+// We must export this as 'default' so the main index.ts can import it correctly
+const ping = {
+  async execute(interaction: any, env: any) {
     return {
       type: InteractionResponseType.ChannelMessageWithSource,
-      data: { content: 'Pong!' },
+      data: {
+        content: 'Pong! 🏓',
+      },
     };
   },
 };
+
+export default ping;

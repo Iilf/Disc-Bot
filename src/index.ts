@@ -6,7 +6,6 @@ export interface Env {
   DISCORD_TOKEN: string;
   DISCORD_PUBLIC_KEY: string;
   DISCORD_APPLICATION_ID: string;
-  SUPPORT_SERVER: string;
 }
 
 const commands: Record<string, any> = {
@@ -15,33 +14,8 @@ const commands: Record<string, any> = {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
-
-    // 1. REGISTRATION ENDPOINT
-    // Visit your-worker.url/register in a browser to update your commands
-    if (url.pathname === '/register') {
-      try {
-        const response = await fetch(
-          `https://discord.com/api/v10/applications/${env.DISCORD_APPLICATION_ID}/commands`,
-          {
-            method: 'PUT',
-            headers: {
-              Authorization: `Bot ${env.DISCORD_TOKEN}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify([
-              { name: 'ping', description: 'Replies with Pong!' }
-            ]),
-          }
-        );
-        const data = await response.text();
-        return new Response(`Registration response: ${data}`, { status: response.status });
-      } catch (e: any) {
-        return new Response(`Error: ${e.message}`, { status: 500 });
-      }
-    }
-
-    // 2. DISCORD INTERACTION HANDLING
+    // 1. DISCORD INTERACTION HANDLING
+    // Only handle POST requests for interactions
     if (request.method !== 'POST') {
       return new Response('Bot is online! Use POST for interactions.', { status: 200 });
     }
@@ -50,28 +24,28 @@ export default {
     const timestamp = request.headers.get('x-signature-timestamp');
     const body = await request.text();
 
-    // Verification step using the DISCORD_PUBLIC_KEY
+    // Verification step: This MUST pass for Discord to accept your URL
     const isValidRequest =
       signature &&
       timestamp &&
       verifyKey(body, signature, timestamp, env.DISCORD_PUBLIC_KEY);
 
     if (!isValidRequest) {
-      console.error('Invalid request signature detected.');
       return new Response('Invalid request signature', { status: 401 });
     }
 
     const interaction = JSON.parse(body);
 
-    // Discord Health Check (Ping)
-    // This is the specific part that makes the URL work in the Discord Portal
+    // 2. ACKNOWLEDGE PING (Health Check)
+    // Discord sends this exact request type (1) to verify your URL is alive.
     if (interaction.type === InteractionType.Ping) {
-      return new Response(JSON.stringify({ type: InteractionResponseType.Pong }), {
-        headers: { 'content-type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({ type: InteractionResponseType.Pong }),
+        { headers: { 'content-type': 'application/json' } }
+      );
     }
 
-    // Command Router
+    // 3. COMMAND ROUTER
     if (interaction.type === InteractionType.ApplicationCommand) {
       const commandName = interaction.data.name;
       const command = commands[commandName];
@@ -87,7 +61,7 @@ export default {
           return new Response(
             JSON.stringify({
               type: InteractionResponseType.ChannelMessageWithSource,
-              data: { content: 'There was an error executing this command.' },
+              data: { content: 'Error executing command.' },
             }),
             { headers: { 'content-type': 'application/json' } }
           );
