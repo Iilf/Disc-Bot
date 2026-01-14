@@ -15,7 +15,6 @@ const commands: Record<string, any> = {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     // 1. DISCORD INTERACTION HANDLING
-    // Only handle POST requests for interactions
     if (request.method !== 'POST') {
       return new Response('Bot is online! Use POST for interactions.', { status: 200 });
     }
@@ -24,7 +23,7 @@ export default {
     const timestamp = request.headers.get('x-signature-timestamp');
     const body = await request.text();
 
-    // Verification step: This MUST pass for Discord to accept your URL
+    // Verification step: Discord uses this to verify your URL
     const isValidRequest =
       signature &&
       timestamp &&
@@ -37,7 +36,6 @@ export default {
     const interaction = JSON.parse(body);
 
     // 2. ACKNOWLEDGE PING (Health Check)
-    // Discord sends this exact request type (1) to verify your URL is alive.
     if (interaction.type === InteractionType.Ping) {
       return new Response(
         JSON.stringify({ type: InteractionResponseType.Pong }),

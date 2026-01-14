@@ -1,6 +1,6 @@
 import { InteractionResponseType } from 'discord-api-types/v10';
 
-// We must export this as 'default' so the main index.ts can import it correctly
+// Define the command object
 const ping = {
   async execute(interaction: any, env: any) {
     return {
@@ -12,4 +12,5 @@ const ping = {
   },
 };
 
+// This line is the most important! It MUST be a default export.
 export default ping;
