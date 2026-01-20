@@ -17,37 +17,45 @@ const commands: Record<string, any> = {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    // 1. Verify the request is a POST request
+    // 1. MUST be a POST request
     if (request.method !== 'POST') {
-      return new Response('Method Not Allowed', { status: 405 });
+      return new Response('Bot is online! Use POST for interactions.', { status: 200 });
     }
 
-    // 2. Extract signature headers for verification
-    const signature = request.headers.get('X-Signature-Ed25519');
-    const timestamp = request.headers.get('X-Signature-Timestamp');
+    // 2. Security Headers
+    const signature = request.headers.get('x-signature-ed25519');
+    const timestamp = request.headers.get('x-signature-timestamp');
     const body = await request.text();
 
-    // 3. Perform cryptographic verification
-    const isValidRequest =
-      signature &&
-      timestamp &&
-      verifyKey(body, signature, timestamp, env.DISCORD_PUBLIC_KEY);
+    // 3. Verification - If this fails, Discord says "Invalid"
+    if (!signature || !timestamp || !env.DISCORD_PUBLIC_KEY) {
+      return new Response('Missing signature or key', { status: 401 });
+    }
+
+    const isValidRequest = verifyKey(
+      body,
+      signature,
+      timestamp,
+      env.DISCORD_PUBLIC_KEY
+    );
 
     if (!isValidRequest) {
+      console.error('Invalid Request Signature');
       return new Response('Invalid request signature', { status: 401 });
     }
 
-    // 4. Handle Discord Interactions
+    // 4. Interaction Logic
     const interaction = JSON.parse(body);
 
-    // Discord sends a PING (Type 1) to verify the endpoint URL
+    // This is the PING Discord sends to verify your URL
     if (interaction.type === InteractionType.PING) {
-      return new Response(JSON.stringify({ type: InteractionResponseType.PONG }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({ type: InteractionResponseType.PONG }),
+        { headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Handle Application Commands (Type 2)
+    // Handle Application Commands
     if (interaction.type === InteractionType.APPLICATION_COMMAND) {
       const commandName = interaction.data.name;
       const command = commands[commandName];
@@ -59,7 +67,6 @@ export default {
             headers: { 'Content-Type': 'application/json' },
           });
         } catch (error) {
-          console.error('Command Error:', error);
           return new Response(
             JSON.stringify({
               type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
@@ -71,9 +78,6 @@ export default {
       }
     }
 
-    return new Response(JSON.stringify({ error: 'Unknown interaction' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(JSON.stringify({ error: 'Unknown interaction' }), { status: 400 });
   },
 };
