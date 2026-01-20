@@ -11,32 +11,43 @@ export interface Env {
   DISCORD_APPLICATION_ID: string;
 }
 
-const commands: Record<string, any> = {
+type CommandHandler = {
+  execute: (interaction: any, env: Env) => Promise<any> | any;
+};
+
+const commands: Record<string, CommandHandler> = {
   ping: ping,
 };
+
+const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
     // DEBUG PATH: Visit your-worker.url/test-config in your browser
-    // This helps you check if the key is actually loaded without showing the whole secret
     if (url.pathname === '/test-config') {
-      const keyStatus = env.DISCORD_PUBLIC_KEY ? `Loaded (Starts with: ${env.DISCORD_PUBLIC_KEY.substring(0, 5)}...)` : 'NOT FOUND';
-      return new Response(`Worker Name: dc-bot\nPublic Key Status: ${keyStatus}`, { status: 200 });
+      const keyStatus = env.DISCORD_PUBLIC_KEY
+        ? `Loaded (Starts with: ${env.DISCORD_PUBLIC_KEY.substring(0, 5)}...)`
+        : 'NOT FOUND';
+      return new Response(`Worker Name: dc-bot\nPublic Key Status: ${keyStatus}`, {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      });
     }
 
-    // 1. MUST be a POST request for Discord
     if (request.method !== 'POST') {
-      return new Response('Bot is online! Use POST for interactions.', { status: 200 });
+      return new Response('Bot is online! Use POST for interactions.', {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      });
     }
 
-    // 2. Security Headers
+    // Security headers
     const signature = request.headers.get('x-signature-ed25519');
     const timestamp = request.headers.get('x-signature-timestamp');
     const body = await request.text();
 
-    // 3. Verification Check
     if (!env.DISCORD_PUBLIC_KEY) {
       return new Response('Missing Public Key Configuration', { status: 500 });
     }
@@ -45,51 +56,94 @@ export default {
       return new Response('Missing signature or timestamp', { status: 401 });
     }
 
-    const isValidRequest = verifyKey(
-      body,
-      signature,
-      timestamp,
-      env.DISCORD_PUBLIC_KEY
-    );
+    // Replay protection: ensure the timestamp is recent (5 minutes)
+    // Discord sends timestamp as seconds string
+    const ts = parseInt(timestamp, 10);
+    if (Number.isFinite(ts)) {
+      const now = Date.now();
+      const ageMs = Math.abs(now - ts * 1000);
+      const maxAgeMs = 5 * 60 * 1000; // 5 minutes
+      if (ageMs > maxAgeMs) {
+        return new Response('Stale request timestamp', { status: 401 });
+      }
+    }
 
+    const isValidRequest = verifyKey(body, signature, timestamp, env.DISCORD_PUBLIC_KEY);
     if (!isValidRequest) {
       return new Response('Invalid request signature', { status: 401 });
     }
 
-    // 4. Interaction Logic
-    const interaction = JSON.parse(body);
+    let interaction: any;
+    try {
+      interaction = JSON.parse(body);
+    } catch (err) {
+      console.error('Failed to parse interaction body:', err);
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
+        status: 400,
+        headers: JSON_HEADERS,
+      });
+    }
 
     // Discord Health Check (PING)
     if (interaction.type === InteractionType.PING) {
-      return new Response(
-        JSON.stringify({ type: InteractionResponseType.PONG }),
-        { headers: { 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ type: InteractionResponseType.PONG }), {
+        headers: JSON_HEADERS,
+      });
     }
 
     // Handle Application Commands
     if (interaction.type === InteractionType.APPLICATION_COMMAND) {
-      const commandName = interaction.data.name;
-      const command = commands[commandName];
+      const commandName = interaction.data?.name;
+      const command = commandName ? commands[commandName] : undefined;
 
-      if (command && command.execute) {
+      if (command && typeof command.execute === 'function') {
         try {
-          const result = await command.execute(interaction, env);
+          let result = await command.execute(interaction, env);
+
+          // If the command returned a plain string, wrap it in the standard response
+          if (typeof result === 'string') {
+            result = {
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: { content: result },
+            };
+          }
+
+          // If the command returned only a data object, wrap it
+          if (result && !result.type && result.data) {
+            result = {
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: result.data,
+            };
+          }
+
+          // Ensure we return a valid JSON response
           return new Response(JSON.stringify(result), {
-            headers: { 'Content-Type': 'application/json' },
+            headers: JSON_HEADERS,
           });
         } catch (error) {
+          console.error('Command execution error:', error);
           return new Response(
             JSON.stringify({
               type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
               data: { content: 'Error executing command.' },
             }),
-            { headers: { 'Content-Type': 'application/json' } }
+            { headers: JSON_HEADERS }
           );
         }
+      } else {
+        return new Response(
+          JSON.stringify({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: { content: `Unknown command: ${commandName}` },
+          }),
+          { headers: JSON_HEADERS }
+        );
       }
     }
 
-    return new Response(JSON.stringify({ error: 'Unknown interaction' }), { status: 400 });
+    return new Response(JSON.stringify({ error: 'Unknown interaction' }), {
+      status: 400,
+      headers: JSON_HEADERS,
+    });
   },
 };
