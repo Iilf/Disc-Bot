@@ -17,7 +17,16 @@ const commands: Record<string, any> = {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    // 1. MUST be a POST request
+    const url = new URL(request.url);
+
+    // DEBUG PATH: Visit your-worker.url/test-config in your browser
+    // This helps you check if the key is actually loaded without showing the whole secret
+    if (url.pathname === '/test-config') {
+      const keyStatus = env.DISCORD_PUBLIC_KEY ? `Loaded (Starts with: ${env.DISCORD_PUBLIC_KEY.substring(0, 5)}...)` : 'NOT FOUND';
+      return new Response(`Worker Name: dc-bot\nPublic Key Status: ${keyStatus}`, { status: 200 });
+    }
+
+    // 1. MUST be a POST request for Discord
     if (request.method !== 'POST') {
       return new Response('Bot is online! Use POST for interactions.', { status: 200 });
     }
@@ -27,9 +36,13 @@ export default {
     const timestamp = request.headers.get('x-signature-timestamp');
     const body = await request.text();
 
-    // 3. Verification - If this fails, Discord says "Invalid"
-    if (!signature || !timestamp || !env.DISCORD_PUBLIC_KEY) {
-      return new Response('Missing signature or key', { status: 401 });
+    // 3. Verification Check
+    if (!env.DISCORD_PUBLIC_KEY) {
+      return new Response('Missing Public Key Configuration', { status: 500 });
+    }
+
+    if (!signature || !timestamp) {
+      return new Response('Missing signature or timestamp', { status: 401 });
     }
 
     const isValidRequest = verifyKey(
@@ -40,14 +53,13 @@ export default {
     );
 
     if (!isValidRequest) {
-      console.error('Invalid Request Signature');
       return new Response('Invalid request signature', { status: 401 });
     }
 
     // 4. Interaction Logic
     const interaction = JSON.parse(body);
 
-    // This is the PING Discord sends to verify your URL
+    // Discord Health Check (PING)
     if (interaction.type === InteractionType.PING) {
       return new Response(
         JSON.stringify({ type: InteractionResponseType.PONG }),
@@ -60,7 +72,7 @@ export default {
       const commandName = interaction.data.name;
       const command = commands[commandName];
 
-      if (command) {
+      if (command && command.execute) {
         try {
           const result = await command.execute(interaction, env);
           return new Response(JSON.stringify(result), {
