@@ -1,149 +1,79 @@
-import {
-  InteractionType,
-  InteractionResponseType,
-  verifyKey,
-} from 'discord-interactions';
-import ping from './commands/ping';
+import 'dotenv/config';
+import { Client, Collection, GatewayIntentBits, Partials } from 'discord.js';
+import { allCommands } from './commands/index.js';
+import { execute as onInteraction } from './events/interactionCreate.js';
+import { memberAdd, memberRemove } from './events/members.js';
+import { execute as onMessage } from './events/messageCreate.js';
+import { messageDelete, messageUpdate, reactionAdd } from './events/messages.js';
+import { execute as onReady } from './events/ready.js';
+import { ensureRuntime } from './lib/storage.js';
+import type { Command, DiscClient, SnipedMessage } from './types.js';
 
-export interface Env {
-  DISCORD_TOKEN: string;
-  DISCORD_PUBLIC_KEY: string;
-  DISCORD_APPLICATION_ID: string;
+async function main(): Promise<void> {
+  const token = process.env.DISCORD_TOKEN;
+  if (!token || token.includes('your_bot_token')) {
+    console.error('Missing DISCORD_TOKEN. Copy .env.example to .env and paste your bot token.');
+    process.exit(1);
+  }
+
+  await ensureRuntime();
+
+  const client = new Client({
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMembers,
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.GuildMessageReactions,
+      GatewayIntentBits.MessageContent,
+      GatewayIntentBits.DirectMessages,
+    ],
+    partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.GuildMember],
+  }) as DiscClient;
+
+  client.commands = new Collection<string, Command>();
+  client.cooldowns = new Collection();
+  client.snipes = new Collection<string, SnipedMessage>();
+  client.editSnipes = new Collection<string, SnipedMessage>();
+  client.prefixCache = new Collection();
+  client.startedAt = Date.now();
+
+  for (const command of allCommands) {
+    client.commands.set(command.data.name, command);
+  }
+
+  client.once('ready', () => {
+    onReady(client).catch((error) => console.error('Ready handler failed', error));
+  });
+  client.on('interactionCreate', (interaction) => {
+    onInteraction(interaction, client).catch((error) => console.error(error));
+  });
+  client.on('messageCreate', (message) => {
+    onMessage(message, client).catch((error) => console.error(error));
+  });
+  client.on('messageDelete', (message) => {
+    messageDelete.execute(message, client).catch((error) => console.error(error));
+  });
+  client.on('messageUpdate', (oldMessage, newMessage) => {
+    messageUpdate.execute(oldMessage, newMessage, client).catch((error) => console.error(error));
+  });
+  client.on('messageReactionAdd', (reaction) => {
+    reactionAdd.execute(reaction).catch((error) => console.error(error));
+  });
+  client.on('guildMemberAdd', (member) => {
+    memberAdd.execute(member).catch((error) => console.error(error));
+  });
+  client.on('guildMemberRemove', (member) => {
+    memberRemove.execute(member).catch((error) => console.error(error));
+  });
+
+  process.on('unhandledRejection', (reason) => {
+    console.error('Unhandled rejection:', reason);
+  });
+
+  await client.login(token);
 }
 
-type CommandHandler = {
-  execute: (interaction: any, env: Env) => Promise<any> | any;
-};
-
-const commands: Record<string, CommandHandler> = {
-  ping: ping,
-};
-
-const JSON_HEADERS = { 'Content-Type': 'application/json' };
-
-export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
-
-    // DEBUG PATH: Visit your-worker.url/test-config in your browser
-    if (url.pathname === '/test-config') {
-      const keyStatus = env.DISCORD_PUBLIC_KEY
-        ? `Loaded (Starts with: ${env.DISCORD_PUBLIC_KEY.substring(0, 5)}...)`
-        : 'NOT FOUND';
-      return new Response(`Worker Name: dc-bot\nPublic Key Status: ${keyStatus}`, {
-        status: 200,
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      });
-    }
-
-    if (request.method !== 'POST') {
-      return new Response('Bot is online! Use POST for interactions.', {
-        status: 200,
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      });
-    }
-
-    // Security headers
-    const signature = request.headers.get('x-signature-ed25519');
-    const timestamp = request.headers.get('x-signature-timestamp');
-    const body = await request.text();
-
-    if (!env.DISCORD_PUBLIC_KEY) {
-      return new Response('Missing Public Key Configuration', { status: 500 });
-    }
-
-    if (!signature || !timestamp) {
-      return new Response('Missing signature or timestamp', { status: 401 });
-    }
-
-    // Replay protection: ensure the timestamp is recent (5 minutes)
-    // Discord sends timestamp as seconds string
-    const ts = parseInt(timestamp, 10);
-    if (Number.isFinite(ts)) {
-      const now = Date.now();
-      const ageMs = Math.abs(now - ts * 1000);
-      const maxAgeMs = 5 * 60 * 1000; // 5 minutes
-      if (ageMs > maxAgeMs) {
-        return new Response('Stale request timestamp', { status: 401 });
-      }
-    }
-
-    const isValidRequest = verifyKey(body, signature, timestamp, env.DISCORD_PUBLIC_KEY);
-    if (!isValidRequest) {
-      return new Response('Invalid request signature', { status: 401 });
-    }
-
-    let interaction: any;
-    try {
-      interaction = JSON.parse(body);
-    } catch (err) {
-      console.error('Failed to parse interaction body:', err);
-      return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
-        status: 400,
-        headers: JSON_HEADERS,
-      });
-    }
-
-    // Discord Health Check (PING)
-    if (interaction.type === InteractionType.PING) {
-      return new Response(JSON.stringify({ type: InteractionResponseType.PONG }), {
-        headers: JSON_HEADERS,
-      });
-    }
-
-    // Handle Application Commands
-    if (interaction.type === InteractionType.APPLICATION_COMMAND) {
-      const commandName = interaction.data?.name;
-      const command = commandName ? commands[commandName] : undefined;
-
-      if (command && typeof command.execute === 'function') {
-        try {
-          let result = await command.execute(interaction, env);
-
-          // If the command returned a plain string, wrap it in the standard response
-          if (typeof result === 'string') {
-            result = {
-              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-              data: { content: result },
-            };
-          }
-
-          // If the command returned only a data object, wrap it
-          if (result && !result.type && result.data) {
-            result = {
-              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-              data: result.data,
-            };
-          }
-
-          // Ensure we return a valid JSON response
-          return new Response(JSON.stringify(result), {
-            headers: JSON_HEADERS,
-          });
-        } catch (error) {
-          console.error('Command execution error:', error);
-          return new Response(
-            JSON.stringify({
-              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-              data: { content: 'Error executing command.' },
-            }),
-            { headers: JSON_HEADERS }
-          );
-        }
-      } else {
-        return new Response(
-          JSON.stringify({
-            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-            data: { content: `Unknown command: ${commandName}` },
-          }),
-          { headers: JSON_HEADERS }
-        );
-      }
-    }
-
-    return new Response(JSON.stringify({ error: 'Unknown interaction' }), {
-      status: 400,
-      headers: JSON_HEADERS,
-    });
-  },
-};
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

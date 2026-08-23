@@ -1,0 +1,58 @@
+[
+  {
+    "id": "cookie",
+    "name": "Cookie",
+    "price": 40,
+    "emoji": "🍪",
+    "description": "Consumable. Eat it with /use for a few bonus coins."
+  },
+  {
+    "id": "coffee",
+    "name": "Coffee",
+    "price": 90,
+    "emoji": "☕",
+    "description": "Consumable. Shaves time off your work cooldown."
+  },
+  {
+    "id": "charm",
+    "name": "Lucky charm",
+    "price": 350,
+    "emoji": "🍀",
+    "description": "Passive. Boosts /work payouts while it stays in your bag."
+  },
+  {
+    "id": "medkit",
+    "name": "Medkit",
+    "price": 120,
+    "emoji": "🩺",
+    "description": "Consumable. Mostly vibes, tiny coin refund."
+  },
+  {
+    "id": "lootbox",
+    "name": "Lootbox",
+    "price": 200,
+    "emoji": "📦",
+    "description": "Consumable. Open with /use for a random coin burst."
+  },
+  {
+    "id": "trophy",
+    "name": "Trophy",
+    "price": 1500,
+    "emoji": "🏆",
+    "description": "Flex item. Keep it forever and /use it to show off."
+  },
+  {
+    "id": "crown",
+    "name": "Paper crown",
+    "price": 750,
+    "emoji": "👑",
+    "description": "Collectible. Proof you spent coins on something silly."
+  },
+  {
+    "id": "laptop",
+    "name": "Second laptop",
+    "price": 2200,
+    "emoji": "💻",
+    "description": "Collectible. For people who have already bought everything else."
+  }
+]
