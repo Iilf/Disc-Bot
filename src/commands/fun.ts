@@ -136,7 +136,7 @@ export const funCommands: Command[] = [
   defineCommand({
     category: 'fun',
     cooldown: 4,
-    data: new SlashCommandBuilder().setName('fact').setDescription('A random fact from facts.txt'),
+    data: new SlashCommandBuilder().setName('fact').setDescription('A random fact from facts.json'),
     async execute(interaction) {
       const fact = (await facts.random()) ?? 'Facts file is empty.';
       await interaction.reply({ embeds: [infoEmbed('🧠 Fact', fact)] });
@@ -238,7 +238,7 @@ export const funCommands: Command[] = [
     cooldown: 4,
     data: new SlashCommandBuilder().setName('wyr').setDescription('Would you rather?'),
     async execute(interaction) {
-      const line = (await wouldYouRather.random()) ?? 'Would you rather add more prompts to data/content/wouldyourather.txt?';
+      const line = (await wouldYouRather.random()) ?? 'Would you rather add more prompts to data/content/wouldyourather.json?';
       await interaction.reply({
         embeds: [infoEmbed('🤷 Would you rather', line)],
       });

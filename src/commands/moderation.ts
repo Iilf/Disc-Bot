@@ -465,7 +465,7 @@ export const moderationCommands: Command[] = [
               'Mod log',
               config.modLogChannelId
                 ? `Currently <#${config.modLogChannelId}>`
-                : 'Not set. File logs still write to `data/runtime/logs/`.',
+                : 'Not set. File logs still write to `data/runtime/modlogs.json`.',
             ),
           ],
         });

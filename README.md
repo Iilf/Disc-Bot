@@ -1,6 +1,6 @@
 # Disc Bot
 
-A feature-rich Discord bot MVP. No database — everything persistent is a **text file** under `data/`.
+A feature-rich Discord bot MVP. No database — everything persistent is a **JSON file** under `data/`.
 
 Slash commands are first-class. Chat still earns XP, trips automod, and drives welcome/AFK/starboard.
 
@@ -43,7 +43,7 @@ Chat XP with a 60s cooldown. `/rank` `/levels` `/setxp`
 `/afk` `/snipe` `/editsnipe` `/suggest` `/suggestion` `/tag` `/quote` `/note` `/todo` `/suggestchannel`
 
 ### Tickets & giveaways
-`/ticket setup|close|add` with a button panel. Closing writes a `.txt` transcript.
+`/ticket setup|close|add` with a button panel. Closing writes a JSON transcript.
 
 `/giveaway start|end|reroll` with an enter button.
 
@@ -52,21 +52,21 @@ Chat XP with a 60s cooldown. `/rank` `/levels` `/setxp`
 
 ## Storage map
 
-Shipped content (edit freely, one line per entry, `#` comments ignored):
+Shipped content (edit freely — JSON arrays or objects):
 
 | File | Used by |
 | --- | --- |
-| `data/content/jokes.txt` | `/joke` |
-| `data/content/facts.txt` | `/fact` |
-| `data/content/fortunes.txt` | `/fortune` |
-| `data/content/eightball.txt` | `/8ball` |
-| `data/content/compliments.txt` | `/compliment` |
-| `data/content/roasts.txt` | `/roast` |
-| `data/content/wouldyourather.txt` | `/wyr` |
-| `data/content/work.txt` | `/work` |
-| `data/content/crime-win.txt` `/crime-fail.txt` | `/crime` |
-| `data/content/quotes.txt` | fallback `/quote random` |
-| `data/content/badwords.txt` | automod defaults |
+| `data/content/jokes.json` | `/joke` |
+| `data/content/facts.json` | `/fact` |
+| `data/content/fortunes.json` | `/fortune` |
+| `data/content/eightball.json` | `/8ball` |
+| `data/content/compliments.json` | `/compliment` |
+| `data/content/roasts.json` | `/roast` |
+| `data/content/wouldyourather.json` | `/wyr` |
+| `data/content/work.json` | `/work` |
+| `data/content/crime-win.json` `/crime-fail.json` | `/crime` |
+| `data/content/quotes.json` | fallback `/quote random` |
+| `data/content/badwords.json` | automod defaults |
 | `data/content/shop.json` | `/shop` `/buy` `/use` |
 | `data/content/trivia.json` | `/trivia` |
 
@@ -77,11 +77,11 @@ Runtime files are created on first use in `data/runtime/` (gitignored):
 - `tags.json` `quotes.json` `suggestions.json`
 - `tickets.json` `giveaways.json` `reminders.json`
 - `notes.json` `todos.json` `afk.json` `polls.json` `starboard.json`
-- `badwords-<guildId>.txt` — extra automod words
-- `logs/<guildId>.txt` — moderation audit trail
-- `transcripts/<channelId>.txt` — closed ticket logs
+- `badwords-<guildId>.json` — extra automod words
+- `modlogs.json` — moderation audit trail
+- `transcripts/<channelId>.json` — closed ticket logs
 
-JSON is still just text. You can open any of these in a normal editor.
+Open any of these in a normal editor.
 
 ## Permissions
 

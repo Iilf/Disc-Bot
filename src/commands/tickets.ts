@@ -6,7 +6,7 @@ import {
   PermissionFlagsBits,
   SlashCommandBuilder,
 } from 'discord.js';
-import { writeTextFile, runtimeFile } from '../lib/storage.js';
+import { JsonStore, runtimeFile } from '../lib/storage.js';
 import { defineCommand, replyError } from '../lib/command.js';
 import { infoEmbed, successEmbed, warnEmbed } from '../lib/embeds.js';
 import { getGuildConfig, ticketsStore, updateGuildConfig } from '../lib/stores.js';
@@ -185,21 +185,31 @@ async function closeTicket(
     return;
   }
   const channel = await guild.channels.fetch(channelId).catch(() => null);
-  let transcript = `Ticket ${channelId}\nOpened by ${ticket.userId}\nClosed by ${closerId}\n\n`;
-  if (channel?.isTextBased()) {
-    const messages = await channel.messages.fetch({ limit: 100 });
-    transcript += [...messages.values()]
-      .reverse()
-      .map((m) => `[${m.createdAt.toISOString()}] ${m.author.tag}: ${m.cleanContent}`)
-      .join('\n');
-  }
-  const file = path.join(runtimeFile('transcripts'), `${channelId}.txt`);
-  await writeTextFile(file, transcript);
+  const messages =
+    channel && 'messages' in channel
+      ? [...(await channel.messages.fetch({ limit: 100 })).values()].reverse().map((m) => ({
+          at: m.createdAt.toISOString(),
+          authorId: m.author.id,
+          author: m.author.tag,
+          content: m.cleanContent,
+        }))
+      : [];
+  const transcript = {
+    channelId,
+    guildId: guild.id,
+    openedBy: ticket.userId,
+    closedBy: closerId,
+    openedAt: ticket.openedAt,
+    closedAt: Date.now(),
+    messages,
+  };
+  const store = new JsonStore(path.join(runtimeFile('transcripts'), `${channelId}.json`), transcript);
+  await store.write(transcript);
   await ticketsStore.update((all) => {
     const found = all.find((t) => t.channelId === channelId && !t.closedAt);
     if (found) found.closedAt = Date.now();
   });
-  await reply(successEmbed('Ticket closed', `Transcript saved to \`data/runtime/transcripts/${channelId}.txt\`.`));
+  await reply(successEmbed('Ticket closed', `Transcript saved to \`data/runtime/transcripts/${channelId}.json\`.`));
   if (channel) {
     setTimeout(() => {
       channel.delete('Ticket closed').catch(() => undefined);

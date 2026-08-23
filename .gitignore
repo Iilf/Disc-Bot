@@ -7,3 +7,4 @@ data/runtime/
 .DS_Store
 .idea/
 .vscode/
+*.zip

@@ -6,11 +6,11 @@ import {
 import { defineCommand, replyError } from '../lib/command.js';
 import { infoEmbed, successEmbed } from '../lib/embeds.js';
 import { defaultBadwords, getGuildConfig, updateGuildConfig } from '../lib/stores.js';
-import { TxtList, runtimeFile } from '../lib/storage.js';
+import { JsonList, runtimeFile } from '../lib/storage.js';
 import type { Command, GuildConfig } from '../types.js';
 
-function guildBadwords(guildId: string): TxtList {
-  return new TxtList(runtimeFile(`badwords-${guildId}.txt`));
+function guildBadwords(guildId: string): JsonList {
+  return new JsonList(runtimeFile(`badwords-${guildId}.json`));
 }
 
 function configSummary(config: GuildConfig): string {
@@ -194,7 +194,7 @@ export const configCommands: Command[] = [
     cooldown: 3,
     data: new SlashCommandBuilder()
       .setName('automod')
-      .setDescription('Word-filter automod backed by txt lists')
+      .setDescription('Word-filter automod backed by JSON lists')
       .addSubcommand((s) =>
         s
           .setName('toggle')
@@ -254,7 +254,7 @@ export const configCommands: Command[] = [
           infoEmbed(
             'Automod lists',
             [
-              `**Default words:** ${defaults.length} (data/content/badwords.txt)`,
+              `**Default words:** ${defaults.length} (data/content/badwords.json)`,
               `**Custom words:** ${custom.length ? custom.map((w) => `\`${w}\``).join(', ') : 'none'}`,
             ].join('\n'),
           ),

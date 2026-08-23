@@ -102,7 +102,7 @@ export const utilityCommands: Command[] = [
       const embed = baseEmbed(COLORS.blurple)
         .setTitle('Disc Bot — command deck')
         .setDescription(
-          'A full MVP in one bot. Data lives in local **txt/json** files under `data/`.\nUse `/help command:<name>` for a single command.',
+          'A full MVP in one bot. Data lives in local **JSON** files under `data/`.\nUse `/help command:<name>` for a single command.',
         );
 
       for (const [key, info] of Object.entries(meta)) {
@@ -229,7 +229,7 @@ export const utilityCommands: Command[] = [
       const mem = process.memoryUsage();
       await interaction.reply({
         embeds: [
-          infoEmbed('Disc Bot', 'Feature-rich MVP. All persistent data is plain text under `data/`.')
+          infoEmbed('Disc Bot', 'Feature-rich MVP. All persistent data is JSON under `data/`.')
             .addFields(
               { name: 'Servers', value: String(client.guilds.cache.size), inline: true },
               { name: 'Users cached', value: String(client.users.cache.size), inline: true },
@@ -242,7 +242,7 @@ export const utilityCommands: Command[] = [
                 inline: true,
               },
               { name: 'Node', value: process.version, inline: true },
-              { name: 'Storage', value: 'txt + json files', inline: true },
+              { name: 'Storage', value: 'JSON files', inline: true },
             )
             .setThumbnail(client.user.displayAvatarURL()),
         ],
@@ -324,7 +324,7 @@ export const utilityCommands: Command[] = [
     cooldown: 5,
     data: new SlashCommandBuilder()
       .setName('remind')
-      .setDescription('Set a reminder stored in reminders.txt/json')
+      .setDescription('Set a reminder stored in reminders.json')
       .addStringOption((o) =>
         o.setName('when').setDescription('Duration like 10m, 2h, 1d').setRequired(true),
       )

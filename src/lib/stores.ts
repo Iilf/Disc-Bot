@@ -1,11 +1,4 @@
-import path from 'node:path';
-import {
-  JsonStore,
-  TxtList,
-  appendTextFile,
-  contentFile,
-  runtimeFile,
-} from './storage.js';
+import { JsonList, JsonStore, contentFile, runtimeFile } from './storage.js';
 import type {
   EcoProfile,
   GiveawayRecord,
@@ -100,18 +93,22 @@ export const starboardStore = new JsonStore<Record<string, string>>(
 export const shopStore = new JsonStore<ShopItem[]>(contentFile('shop.json'), []);
 export const triviaStore = new JsonStore<TriviaQuestion[]>(contentFile('trivia.json'), []);
 
-export const jokes = new TxtList(contentFile('jokes.txt'));
-export const facts = new TxtList(contentFile('facts.txt'));
-export const fortunes = new TxtList(contentFile('fortunes.txt'));
-export const eightball = new TxtList(contentFile('eightball.txt'));
-export const compliments = new TxtList(contentFile('compliments.txt'));
-export const roasts = new TxtList(contentFile('roasts.txt'));
-export const wouldYouRather = new TxtList(contentFile('wouldyourather.txt'));
-export const workLines = new TxtList(contentFile('work.txt'));
-export const crimeWin = new TxtList(contentFile('crime-win.txt'));
-export const crimeFail = new TxtList(contentFile('crime-fail.txt'));
-export const defaultBadwords = new TxtList(contentFile('badwords.txt'));
-export const quotesSeed = new TxtList(contentFile('quotes.txt'));
+export const jokes = new JsonList(contentFile('jokes.json'));
+export const facts = new JsonList(contentFile('facts.json'));
+export const fortunes = new JsonList(contentFile('fortunes.json'));
+export const eightball = new JsonList(contentFile('eightball.json'));
+export const compliments = new JsonList(contentFile('compliments.json'));
+export const roasts = new JsonList(contentFile('roasts.json'));
+export const wouldYouRather = new JsonList(contentFile('wouldyourather.json'));
+export const workLines = new JsonList(contentFile('work.json'));
+export const crimeWin = new JsonList(contentFile('crime-win.json'));
+export const crimeFail = new JsonList(contentFile('crime-fail.json'));
+export const defaultBadwords = new JsonList(contentFile('badwords.json'));
+export const quotesSeed = new JsonList(contentFile('quotes.json'));
+export const modLogs = new JsonStore<Record<string, Array<{ at: number; message: string }>>>(
+  runtimeFile('modlogs.json'),
+  {},
+);
 
 export async function getGuildConfig(guildId: string): Promise<GuildConfig> {
   const all = await guildConfigs.read();
@@ -185,9 +182,11 @@ export async function updateLevel(
 }
 
 export async function logMod(guildId: string, line: string): Promise<void> {
-  const file = path.join(runtimeFile('logs'), `${guildId}.txt`);
-  const stamp = new Date().toISOString();
-  await appendTextFile(file, `[${stamp}] ${line}`);
+  await modLogs.update((all) => {
+    const list = all[guildId] ?? [];
+    list.push({ at: Date.now(), message: line });
+    all[guildId] = list;
+  });
 }
 
 export async function getShop(): Promise<ShopItem[]> {

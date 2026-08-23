@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Feature-rich Discord bot MVP with text-file storage",
+  "description": "Feature-rich Discord bot MVP with JSON file storage",
   "main": "src/index.ts",
   "scripts": {
     "start": "tsx src/index.ts",

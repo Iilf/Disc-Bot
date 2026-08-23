@@ -45,46 +45,6 @@ export async function writeTextFile(filePath: string, content: string): Promise<
   await enqueue(filePath, () => writeTextFileUnlocked(filePath, content));
 }
 
-export async function appendTextFile(filePath: string, line: string): Promise<void> {
-  await enqueue(filePath, async () => {
-    await ensureDir(path.dirname(filePath));
-    await fs.appendFile(filePath, line.endsWith('\n') ? line : `${line}\n`, 'utf8');
-  });
-}
-
-export function parseList(raw: string): string[] {
-  return raw
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0 && !line.startsWith('#'));
-}
-
-export class TxtList {
-  constructor(private readonly filePath: string) {}
-
-  async all(): Promise<string[]> {
-    return parseList(await readTextFile(this.filePath));
-  }
-
-  async random(): Promise<string | null> {
-    const items = await this.all();
-    if (!items.length) return null;
-    return items[Math.floor(Math.random() * items.length)] ?? null;
-  }
-
-  async add(line: string): Promise<void> {
-    await appendTextFile(this.filePath, line.trim());
-  }
-
-  async remove(predicate: (line: string) => boolean): Promise<boolean> {
-    const items = await this.all();
-    const next = items.filter((item) => !predicate(item));
-    if (next.length === items.length) return false;
-    await writeTextFile(this.filePath, `${next.join('\n')}\n`);
-    return true;
-  }
-}
-
 export class JsonStore<T> {
   constructor(
     private readonly filePath: string,
@@ -116,6 +76,42 @@ export class JsonStore<T> {
   }
 }
 
+export class JsonList {
+  private readonly store: JsonStore<string[]>;
+
+  constructor(filePath: string) {
+    this.store = new JsonStore<string[]>(filePath, []);
+  }
+
+  async all(): Promise<string[]> {
+    return this.store.read();
+  }
+
+  async random(): Promise<string | null> {
+    const items = await this.all();
+    if (!items.length) return null;
+    return items[Math.floor(Math.random() * items.length)] ?? null;
+  }
+
+  async add(line: string): Promise<void> {
+    const value = line.trim();
+    if (!value) return;
+    await this.store.update((items) => {
+      if (!items.includes(value)) items.push(value);
+    });
+  }
+
+  async remove(predicate: (line: string) => boolean): Promise<boolean> {
+    let removed = false;
+    await this.store.update((items) => {
+      const next = items.filter((item) => !predicate(item));
+      removed = next.length !== items.length;
+      return next;
+    });
+    return removed;
+  }
+}
+
 export function runtimeFile(name: string): string {
   return path.join(RUNTIME_DIR, name);
 }
@@ -127,5 +123,4 @@ export function contentFile(name: string): string {
 export async function ensureRuntime(): Promise<void> {
   await ensureDir(RUNTIME_DIR);
   await ensureDir(path.join(RUNTIME_DIR, 'transcripts'));
-  await ensureDir(path.join(RUNTIME_DIR, 'logs'));
 }
