@@ -1,8 +1,25 @@
 {
-  "name": "my-discord-bot",
+  "name": "disc-bot",
+  "version": "1.0.0",
+  "private": true,
   "type": "module",
+  "description": "Feature-rich Discord bot MVP with text-file storage",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  },
   "dependencies": {
-    "discord-api-types": "^0.37.0",
-    "discord-interactions": "^4.0.0"
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.7",
+    "tsx": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
   }
 }

@@ -1,0 +1,77 @@
+[
+  {
+    "question": "What does HTTP stand for?",
+    "answers": ["HyperText Transfer Protocol", "High Transfer Text Process", "Host Transfer Type Protocol", "Hyperlink Text Transmission Path"],
+    "correct": 0
+  },
+  {
+    "question": "Which planet has the most moons (as of the mid-2020s count race)?",
+    "answers": ["Mars", "Saturn", "Earth", "Venus"],
+    "correct": 1
+  },
+  {
+    "question": "What year did Discord launch?",
+    "answers": ["2012", "2015", "2017", "2019"],
+    "correct": 1
+  },
+  {
+    "question": "In JavaScript, what is the result of typeof null?",
+    "answers": ["null", "undefined", "object", "number"],
+    "correct": 2
+  },
+  {
+    "question": "Which data format is both a text file and a common API payload?",
+    "answers": ["PNG", "JSON", "MP3", "EXE"],
+    "correct": 1
+  },
+  {
+    "question": "What is the chemical symbol for gold?",
+    "answers": ["Ag", "Gd", "Au", "Go"],
+    "correct": 2
+  },
+  {
+    "question": "How many bits are in a byte?",
+    "answers": ["4", "8", "16", "32"],
+    "correct": 1
+  },
+  {
+    "question": "Which language is primarily used for styling web pages?",
+    "answers": ["HTML", "CSS", "SQL", "Bash"],
+    "correct": 1
+  },
+  {
+    "question": "What is the largest ocean on Earth?",
+    "answers": ["Atlantic", "Indian", "Arctic", "Pacific"],
+    "correct": 3
+  },
+  {
+    "question": "Who wrote the Linux kernel?",
+    "answers": ["Richard Stallman", "Linus Torvalds", "Bill Gates", "Ada Lovelace"],
+    "correct": 1
+  },
+  {
+    "question": "What does XP stand for in this bot?",
+    "answers": ["Extra Pizza", "Experience points", "Xbox Play", "Export Packet"],
+    "correct": 1
+  },
+  {
+    "question": "Which company created TypeScript?",
+    "answers": ["Google", "Microsoft", "Meta", "Amazon"],
+    "correct": 1
+  },
+  {
+    "question": "What is 2^10?",
+    "answers": ["512", "1000", "1024", "2048"],
+    "correct": 2
+  },
+  {
+    "question": "Which of these is a NoSQL database?",
+    "answers": ["PostgreSQL", "MySQL", "MongoDB", "SQLite"],
+    "correct": 2
+  },
+  {
+    "question": "What color is a polar bear's skin?",
+    "answers": ["White", "Pink", "Black", "Transparent"],
+    "correct": 2
+  }
+]
